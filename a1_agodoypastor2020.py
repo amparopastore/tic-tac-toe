@@ -1,3 +1,10 @@
+# Florida Atlantic University
+# Intro to AI, CAP4630, Summer 2023, Dr. Marques
+# Project 1: AI Tic-Tac-Toe game
+# Author: Amparo Godoy Pastore
+# Date: 6/6/2023
+# Refer to the README file for references and bibliography
+
 import math
 import random
 
@@ -18,14 +25,14 @@ class HumanPlayer(Player):
         valid_square = False
         val = None
         while not valid_square:
-            square = input(self.letter + '\'s turn. Input move (0-8): ')
+            square = input(self.letter + '\n\'s turn. Input move (0-8): ')
             try:
                 val = int(square)
                 if val not in game.available_moves():
                     raise ValueError
                 valid_square = True
             except ValueError:
-                print('Invalid square. Try again.')
+                print('\nInvalid square. Try again.')
         return val
 
 
@@ -41,10 +48,10 @@ class AIPlayer(Player):
         return square
 
     def minimax(self, state, player):
-        max_player = self.letter  # yourself
+        max_player = self.letter  
         other_player = 'O' if player == 'X' else 'X'
 
-        # first we want to check if the previous move is a winner
+        # check for a winner
         if state.current_winner == other_player:
             return {'position': None, 'score': 1 * (state.num_empty_squares() + 1) if other_player == max_player else -1 * (
                         state.num_empty_squares() + 1)}
@@ -52,17 +59,17 @@ class AIPlayer(Player):
             return {'position': None, 'score': 0}
 
         if player == max_player:
-            best = {'position': None, 'score': -math.inf}  # each score should maximize
+            best = {'position': None, 'score': -math.inf}  # maximize
         else:
-            best = {'position': None, 'score': math.inf}  # each score should minimize
+            best = {'position': None, 'score': math.inf}  # minimize
         for possible_move in state.available_moves():
             state.make_move(possible_move, player)
-            sim_score = self.minimax(state, other_player)  # simulate a game after making that move
-
+            sim_score = self.minimax(state, other_player)  # simulate 
+            
             # undo move
             state.board[possible_move] = ' '
             state.current_winner = None
-            sim_score['position'] = possible_move  # this represents the move optimal next move
+            sim_score['position'] = possible_move  # optimal next move
 
             if player == max_player:  # X is max player
                 if sim_score['score'] > best['score']:
@@ -134,7 +141,6 @@ class TicTacToe():
     def available_moves(self):
         return [i for i, x in enumerate(self.board) if x == " "]
 
-
 def play(game, x_player, o_player, print_game=True):
 
     if print_game:
@@ -158,18 +164,34 @@ def play(game, x_player, o_player, print_game=True):
             if game.current_winner:
                 if print_game:
                     print(letter + ' wins!')
-                return letter  # ends the loop and exits the game
+                ask_play_again()  # asks play again?
+            
             letter = 'O' if letter == 'X' else 'X'  # switches player
 
-      # time.sleep(.8)
 
     if print_game:
         print('It\'s a tie!')
 
+    # ask the user if they want to play again
+    ask_play_again()
+
+def ask_play_again():
+    yes_choices = ['yes', 'y']
+    no_choices = ['no', 'n']
+    answer = input('\nPlay again? (yes/no): ')
+    if answer.lower() in yes_choices:
+        game = TicTacToe()
+        print('')
+        play(game, x_player, o_player, print_game=True)
+    elif answer.lower() in no_choices:
+        print('\nThanks for playing!')
+        return
+    else:
+        print('\nEnter yes or no')
 
 # Main 
 if __name__ == '__main__':
-    x_player = AIPlayer('X')
-    o_player = HumanPlayer('O')
-    t = TicTacToe()
-    play(t, x_player, o_player, print_game=True)
+    o_player = AIPlayer('O')
+    x_player = HumanPlayer('X')
+    game = TicTacToe()
+    play(game, x_player, o_player, print_game=True)
