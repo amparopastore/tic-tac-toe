@@ -1,7 +1,7 @@
 import math
 import random
 
-
+# Players
 class Player():
     def __init__(self, letter):
         self.letter = letter
@@ -73,6 +73,7 @@ class AIPlayer(Player):
         return best
     
 
+# Game
 class TicTacToe():
     def __init__(self):
         self.board = self.make_board()
@@ -166,6 +167,7 @@ def play(game, x_player, o_player, print_game=True):
         print('It\'s a tie!')
 
 
+# Main 
 if __name__ == '__main__':
     x_player = AIPlayer('X')
     o_player = HumanPlayer('O')
