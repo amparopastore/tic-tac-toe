@@ -2,196 +2,181 @@
 # Intro to AI, CAP4630, Summer 2023, Dr. Marques
 # Project 1: AI Tic-Tac-Toe game
 # Author: Amparo Godoy Pastore
-# Date: 6/6/2023
-# Refer to the README file for references and bibliography
+# Date: 6/7/2023
 
 import math
-import random
 
 # Players
 class Player():
-    def __init__(self, letter):
-        self.letter = letter
+    def __init__(self, symbol):
+        self.symbol = symbol
 
-    def get_move(self, game):
+    def choose_move(self, game):
         pass
 
-
 class HumanPlayer(Player):
-    def __init__(self, letter):
-        super().__init__(letter)
+    def __init__(self, symbol):
+        super().__init__(symbol)
 
-    def get_move(self, game):
-        valid_square = False
-        val = None
-        while not valid_square:
-            square = input(self.letter + '\n\'s turn. Input move (0-8): ')
+    def choose_move(self, game):
+        valid_move = False
+        while not valid_move:
+            move = input('\n' + self.symbol + '\'s turn. Input a move (0-8): ') # human input's their move
             try:
-                val = int(square)
+                val = int(move)
                 if val not in game.available_moves():
                     raise ValueError
-                valid_square = True
+                valid_move = True
             except ValueError:
                 print('\nInvalid square. Try again.')
         return val
-
-
+    
 class AIPlayer(Player):
-    def __init__(self, letter):
-        super().__init__(letter)
+    def __init__(self, symbol):
+        super().__init__(symbol)
 
-    def get_move(self, game):
-        if len(game.available_moves()) == 9:
-            square = random.choice(game.available_moves())
-        else:
-            square = self.minimax(game, self.letter)['position']
-        return square
+    def choose_move(self, game):
+        move = self.minimax(game, self.symbol, -math.inf, math.inf)['position']
+        return move
 
-    def minimax(self, state, player):
-        max_player = self.letter  
-        other_player = 'O' if player == 'X' else 'X'
+    def minimax(self, state, player, alpha, beta):
+        max_player = self.symbol
+        opponent = 'O' if player == 'X' else 'X'
 
         # check for a winner
-        if state.current_winner == other_player:
-            return {'position': None, 'score': 1 * (state.num_empty_squares() + 1) if other_player == max_player else -1 * (
-                        state.num_empty_squares() + 1)}
-        elif not state.empty_squares():
+        if state.winner == opponent:
+            return {'position': None, 'score': 1 * (state.empty_cells() + 1) if opponent == max_player else -1 * (state.empty_cells() + 1)}
+        elif state.empty_cells() == 0:
             return {'position': None, 'score': 0}
 
-        if player == max_player:
-            best = {'position': None, 'score': -math.inf}  # maximize
-        else:
-            best = {'position': None, 'score': math.inf}  # minimize
-        for possible_move in state.available_moves():
-            state.make_move(possible_move, player)
-            sim_score = self.minimax(state, other_player)  # simulate 
-            
-            # undo move
-            state.board[possible_move] = ' '
-            state.current_winner = None
-            sim_score['position'] = possible_move  # optimal next move
+        best = {'position': None, 'score': -math.inf if player == max_player else math.inf}
 
-            if player == max_player:  # X is max player
-                if sim_score['score'] > best['score']:
-                    best = sim_score
+        for possible_move in state.available_moves():
+            state.place_move(possible_move, player)
+            sim = self.minimax(state, opponent, alpha, beta)  # simulate
+
+            # undo move
+            state.undo_move(possible_move)
+            state.winner = None
+            sim['position'] = possible_move  # optimal next move
+
+            if player == max_player:
+                if sim['score'] > best['score']:
+                    best = sim
+                alpha = max(alpha, best['score'])
+                if beta <= alpha:
+                    break
             else:
-                if sim_score['score'] < best['score']:
-                    best = sim_score
+                if sim['score'] < best['score']:
+                    best = sim
+                beta = min(beta, best['score'])
+                if beta <= alpha:
+                    break
+
         return best
-    
+
 
 # Game
 class TicTacToe():
     def __init__(self):
-        self.board = self.make_board()
-        self.current_winner = None
-
-    @staticmethod
-    def make_board():
-        return [' ' for _ in range(9)]
+        self.board = [' ' for _ in range(9)] # board as a list of nine items
+        self.winner = None
 
     def print_board(self):
+        # print the items in the board list in a board format
         for row in [self.board[i*3:(i+1) * 3] for i in range(3)]:
             print('| ' + ' | '.join(row) + ' |')
 
-    @staticmethod
-    def print_board_nums():
-        # 0 | 1 | 2
+    def print_position_board(self):
+        # print the board with the positions
         number_board = [[str(i) for i in range(j*3, (j+1)*3)] for j in range(3)]
         for row in number_board:
             print('| ' + ' | '.join(row) + ' |')
 
-    def make_move(self, square, letter):
-        if self.board[square] == ' ':
-            self.board[square] = letter
-            if self.winner(square, letter):
-                self.current_winner = letter
+    def place_move(self, cell, symbol):
+        # place your move on the board
+        if cell is None or not isinstance(cell, int) or cell < 0 or cell >= 9:
+            return False
+        
+        if self.board[cell] == ' ': # check cell is empty just in case
+            self.board[cell] = symbol 
+            if self.is_winner(cell, symbol):
+                self.winner = symbol
             return True
         return False
+    
+    def undo_move(self, move):
+        self.board[move] = ' '
 
-    def winner(self, square, letter):
-        # check the row
-        row_ind = math.floor(square / 3)
-        row = self.board[row_ind*3:(row_ind+1)*3]
-        # print('row', row)
-        if all([s == letter for s in row]):
-            return True
-        col_ind = square % 3
-        column = [self.board[col_ind+i*3] for i in range(3)]
-        # print('col', column)
-        if all([s == letter for s in column]):
-            return True
-        if square % 2 == 0:
-            diagonal1 = [self.board[i] for i in [0, 4, 8]]
-            # print('diag1', diagonal1)
-            if all([s == letter for s in diagonal1]):
+    def is_winner(self, cell, symbol):
+    # check for winning combinations, or tie
+        winning_combinations = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],  # rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],  # columns
+        [0, 4, 8], [2, 4, 6]  # diagonals
+        ]
+
+        for combination in winning_combinations:
+            if all(self.board[cell] == symbol for cell in combination):
                 return True
-            diagonal2 = [self.board[i] for i in [2, 4, 6]]
-            # print('diag2', diagonal2)
-            if all([s == letter for s in diagonal2]):
-                return True
+
         return False
-
-    def empty_squares(self):
-        return ' ' in self.board
-
-    def num_empty_squares(self):
+    
+    def empty_cells(self):
         return self.board.count(' ')
-
+    
     def available_moves(self):
-        return [i for i, x in enumerate(self.board) if x == " "]
+        return [i for i, x in enumerate(self.board) if x == ' ']
+    
+    def welcome(self):
+        print()
 
-def play(game, x_player, o_player, print_game=True):
-
-    if print_game:
-        game.print_board_nums()
-
-    letter = 'X'
-    while game.empty_squares():
-        if letter == 'O':
-            square = o_player.get_move(game)
+def Play(game, x_player, o_player):
+    game.print_position_board() # start each game by printing the position board
+    symbol = 'X' # X always starts the game
+    while game.empty_cells():
+        if symbol == 'X':
+            cell = x_player.choose_move(game)
         else:
-            square = x_player.get_move(game)
-        if game.make_move(square, letter):
+            cell = o_player.choose_move(game)
 
-            if print_game:
-                print('')
-                print(letter + ' makes a move to square {}'.format(square))
-                print('')
-                game.print_board()
-                print('')
-
-            if game.current_winner:
-                if print_game:
-                    print(letter + ' wins!')
-                ask_play_again()  # asks play again?
-            
-            letter = 'O' if letter == 'X' else 'X'  # switches player
-
-
-    if print_game:
-        print('It\'s a tie!')
-
-    # ask the user if they want to play again
+        if game.place_move(cell, symbol):
+            print('\n' + symbol + ' makes a move to square {}'.format(cell) + '\n')
+            game.print_board()
+            print('') # just an empty line
+        
+        # check for winner
+        if game.winner:
+            print(symbol + ' wins')
+            ask_play_again()
+        
+        symbol = 'O' if symbol == 'X' else 'X'  # switch player
+    
+    # declare tie
+    print('\nIt\'s a tie')
     ask_play_again()
 
 def ask_play_again():
     yes_choices = ['yes', 'y']
     no_choices = ['no', 'n']
-    answer = input('\nPlay again? (yes/no): ')
-    if answer.lower() in yes_choices:
-        game = TicTacToe()
-        print('')
-        play(game, x_player, o_player, print_game=True)
-    elif answer.lower() in no_choices:
-        print('\nThanks for playing!')
-        return
-    else:
-        print('\nEnter yes or no')
+    while True:
+        answer = input('\nPlay again? (yes/no): ')
+        if answer.lower() in yes_choices:
+            game = TicTacToe()
+            print('')
+            Play(game, x_player, o_player)
+
+        elif answer.lower() in no_choices:
+            print('\nThanks for playing!\n')
+            raise SystemExit
+        else:
+            print('\nEnter yes or no')
+            continue
+
 
 # Main 
 if __name__ == '__main__':
     o_player = AIPlayer('O')
     x_player = HumanPlayer('X')
     game = TicTacToe()
-    play(game, x_player, o_player, print_game=True)
+    Play(game, x_player, o_player)
