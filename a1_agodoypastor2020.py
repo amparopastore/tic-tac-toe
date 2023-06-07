@@ -128,9 +128,6 @@ class TicTacToe():
     def available_moves(self):
         return [i for i, x in enumerate(self.board) if x == ' ']
     
-    def welcome(self):
-        print()
-
 def Play(game, x_player, o_player):
     game.print_position_board() # start each game by printing the position board
     symbol = 'X' # X always starts the game
@@ -173,10 +170,17 @@ def ask_play_again():
             print('\nEnter yes or no')
             continue
 
+def welcome():
+        print('\nTic-Tac-Toe:\n'
+              'Hey there! This program allows you to play Tic-Tac-Toe against an AI opponent.\n'
+              'The AI uses the minimax algorithm with alpha-beta pruning to make optimal moves.\n'
+              'Try to beat the AI or see if you can force a draw! Good luck ;) \n')
+
 
 # Main 
 if __name__ == '__main__':
     o_player = AIPlayer('O')
     x_player = HumanPlayer('X')
     game = TicTacToe()
+    welcome()
     Play(game, x_player, o_player)
